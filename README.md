@@ -1,6 +1,8 @@
 # Taskify
 
-A modern project and task management application built with Next.js, Prisma, and Better Auth. This project was built to demonstrate how vulnerabilities can creep into our applications if we're not careful with our code practices. 
+A modern project and task management application built with Next.js, Prisma, and Better Auth. This project was built to demonstrate how vulnerabilities can creep into our applications if we're not careful with our code practices.
+
+## Week 1
 
 There are intentional security flaws sprinkled throughout the codebase for educational purposes:
 
@@ -8,9 +10,13 @@ There are intentional security flaws sprinkled throughout the codebase for educa
 2. Cross-site Scripting (XSS) - Project descriptions are not sanitized and user-defined content is inserted directly into the DOM
 3. Broken Access Control /Insecure Direct Object References (IDOR) - Users can access projects and tasks that do not belong to them by manipulating URL parameters.
 
-Viewers are encouraged to clone and explore the codebase, identify these vulnerabilities, and mitigate them in ways that follow best security practices and support existing features. 
+Viewers are encouraged to clone and explore the codebase, identify these vulnerabilities, and mitigate them in ways that follow best security practices and support existing features.
 
 Directions on how to exploit these vulnerabilities can be found in the [vulnerabilities.md](https://github.com/KylerJohnsonDev/Tek_innov8ers/blob/main/vulnerabilities.md) file.
+
+## Week 2
+
+Find a Static Analysis Security Testing (SAST) tool and integrate it into your CI pipeline. One example of this is [CodeQL](https://codeql.github.com/).
 
 ## App Features
 
