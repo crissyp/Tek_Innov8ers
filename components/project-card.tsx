@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProjectWithTaskCount } from "@/lib/services";
 import { Calendar, Clock } from "lucide-react";
@@ -27,15 +33,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <div className="space-y-1">
               <CardTitle>{project.title}</CardTitle>
               <CardDescription className="line-clamp-2">
-                {project.description ? (
-                  <span dangerouslySetInnerHTML={{ __html: project.description }} />
-                ) : (
-                  "No description"
-                )}
+                {project.description ? project.description : "No description"}
               </CardDescription>
             </div>
             <Badge variant="secondary">
-              {project._count?.tasks || 0} {project._count?.tasks === 1 ? "task" : "tasks"}
+              {project._count?.tasks || 0}{" "}
+              {project._count?.tasks === 1 ? "task" : "tasks"}
             </Badge>
           </div>
         </CardHeader>

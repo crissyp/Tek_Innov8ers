@@ -1,7 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProjectById, getAllTaskStatuses } from "@/lib/services";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { EditProjectDialog } from "@/components/edit-project-dialog";
@@ -26,8 +32,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   const { id } = await params;
   const [project, taskStatuses] = await Promise.all([
-    getProjectById(id),
-    getAllTaskStatuses()
+    getProjectById(id, session.user.id),
+    getAllTaskStatuses(),
   ]);
 
   if (!project) {
@@ -62,11 +68,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               <div className="space-y-2">
                 <CardTitle className="text-3xl">{project.title}</CardTitle>
                 <CardDescription className="text-base">
-                  {project.description ? (
-                    <span dangerouslySetInnerHTML={{ __html: project.description }} />
-                  ) : (
-                    "No description provided"
-                  )}
+                  {project.description
+                    ? project.description
+                    : "No description provided"}
                 </CardDescription>
               </div>
               <EditProjectDialog project={project} />
@@ -89,7 +93,10 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-semibold">Tasks</h2>
-            <CreateTaskDialog projectId={project.id} taskStatuses={taskStatuses} />
+            <CreateTaskDialog
+              projectId={project.id}
+              taskStatuses={taskStatuses}
+            />
           </div>
 
           <TaskFilter tasks={project.tasks} taskStatuses={taskStatuses} />

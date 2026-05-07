@@ -20,7 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateTaskAction, deleteTaskAction, getTaskStatusesAction } from "@/app/actions";
+import {
+  updateTaskAction,
+  deleteTaskAction,
+  getTaskStatusesAction,
+} from "@/app/actions";
 import { TaskWithStatus } from "@/lib/services";
 import { Pencil, Trash2 } from "lucide-react";
 
@@ -57,10 +61,10 @@ export function EditTaskDialog({ task }: EditTaskDialogProps) {
 
   async function handleDelete() {
     if (!confirm("Are you sure you want to delete this task?")) return;
-    
+
     setIsLoading(true);
     try {
-      await deleteTaskAction(task.id, task.projectId);
+      await deleteTaskAction(task.id);
       setOpen(false);
     } catch (error) {
       console.error("Failed to delete task:", error);

@@ -2,15 +2,37 @@ import { prismaClient } from "./db";
 import { TaskStatus } from "@prisma/client";
 import { removeUndefinedProperties } from "./utils";
 
-export async function searchProjects(userId: string, searchQuery: string): Promise<Project[]> {
-  const sql = `
-    SELECT id, title, description, createdAt, updatedAt, userId 
-    FROM Project 
-    WHERE userId = '${userId}' AND title LIKE '%${searchQuery}%'
-  `;
-  
-  const results = await prismaClient.$queryRawUnsafe(sql);
-  return results as Project[];
+export async function searchProjects(
+  userId: string,
+  searchQuery: string,
+): Promise<Project[]> {
+  const normalizedQuery = searchQuery.trim();
+
+  if (!normalizedQuery) {
+    return [];
+  }
+
+  const results = await prismaClient.project.findMany({
+    where: {
+      userId,
+      title: {
+        contains: normalizedQuery,
+      },
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      createdAt: true,
+      updatedAt: true,
+      userId: true,
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
+
+  return results;
 }
 
 export type Project = {
@@ -26,7 +48,7 @@ export type Task = {
   id: string;
   title: string;
   description: string | null;
-  statusId: string
+  statusId: string;
   createdAt: Date;
   updatedAt: Date;
   projectId: string;
@@ -40,21 +62,23 @@ export type ProjectWithTaskCount = Project & {
   _count: {
     tasks: number;
   };
-}
+};
 
 export type TaskWithStatus = Task & {
   status: TaskStatus;
-}
+};
 
 // Task Status operations
 export async function getAllTaskStatuses(): Promise<TaskStatus[]> {
   return await prismaClient.taskStatus.findMany({
-    orderBy: { sortOrder: "asc" }
+    orderBy: { sortOrder: "asc" },
   });
 }
 
 // Project operations
-export async function getAllProjects(userId: string): Promise<ProjectWithTaskCount[]> {
+export async function getAllProjects(
+  userId: string,
+): Promise<ProjectWithTaskCount[]> {
   const projects = await prismaClient.project.findMany({
     where: { userId },
     orderBy: { updatedAt: "desc" },
@@ -66,30 +90,30 @@ export async function getAllProjects(userId: string): Promise<ProjectWithTaskCou
       updatedAt: true,
       userId: true,
       _count: {
-        select: { tasks: true }
-      }
-    }
-  })
-  
+        select: { tasks: true },
+      },
+    },
+  });
+
   return projects;
 }
 
-export async function getProjectById(projectId: string) {
-  const project = await prismaClient.project.findUnique({
-    where: { id: projectId },
+export async function getProjectById(projectId: string, userId: string) {
+  const project = await prismaClient.project.findFirst({
+    where: {
+      id: projectId,
+      userId,
+    },
     include: {
       tasks: {
         include: {
-          status: true
+          status: true,
         },
-        orderBy: [
-          { status: { sortOrder: 'asc' } },
-          { createdAt: 'desc' }
-        ]
-      }
-    }
-  })
-  
+        orderBy: [{ status: { sortOrder: "asc" } }, { createdAt: "desc" }],
+      },
+    },
+  });
+
   return project;
 }
 
@@ -99,70 +123,154 @@ export async function createProject(data: {
   userId: string;
 }): Promise<Project> {
   const newProject = await prismaClient.project.create({
-    data
-  })
+    data,
+  });
   return newProject;
 }
 
 export async function updateProject(
   projectId: string,
-  data: { title?: string; description?: string }
+  userId: string,
+  data: { title?: string; description?: string },
 ): Promise<Project> {
   const now = new Date().toISOString();
 
   const projectDataToUpdate = removeUndefinedProperties(data);
-  
+
+  const project = await prismaClient.project.findFirst({
+    where: {
+      id: projectId,
+      userId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!project) {
+    throw new Error("Project not found");
+  }
+
   const updatedProject = await prismaClient.project.update({
-    where: { id: projectId },
+    where: { id: project.id },
     data: {
       ...projectDataToUpdate,
       updatedAt: new Date(now),
-    }
-  })
+    },
+  });
   return updatedProject;
 }
 
-export async function deleteProject(projectId: string): Promise<void> {
-  await prismaClient.project.delete({
-    where: { id: projectId }
-  })
+export async function deleteProject(
+  projectId: string,
+  userId: string,
+): Promise<void> {
+  const deleted = await prismaClient.project.deleteMany({
+    where: {
+      id: projectId,
+      userId,
+    },
+  });
+
+  if (deleted.count === 0) {
+    throw new Error("Project not found");
+  }
 }
 
-export async function createTask(data: {
-  title: string;
-  description?: string;
-  statusId: string;
-  projectId: string;
-}): Promise<TaskWithStatus> {
+export async function createTask(
+  data: {
+    title: string;
+    description?: string;
+    statusId: string;
+    projectId: string;
+  },
+  userId: string,
+): Promise<TaskWithStatus> {
+  const project = await prismaClient.project.findFirst({
+    where: {
+      id: data.projectId,
+      userId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!project) {
+    throw new Error("Project not found");
+  }
+
   const newTask = await prismaClient.task.create({
-    data,
+    data: {
+      ...data,
+      projectId: project.id,
+    },
     include: { status: true },
-  })
+  });
   return newTask;
 }
 
 export async function updateTask(
   taskId: string,
-  data: { title?: string; description?: string; statusId?: string }
+  userId: string,
+  data: { title?: string; description?: string; statusId?: string },
 ): Promise<TaskWithStatus> {
   const now = new Date().toISOString();
   // remove undefined values
   const taskDataToUpdate = removeUndefinedProperties(data);
 
- const updatedTask = await prismaClient.task.update({
-  where: { id: taskId },
-  data: {
-    ...taskDataToUpdate,
-    updatedAt: new Date(now),
-  },
-  include: { status: true }
- })
+  const task = await prismaClient.task.findFirst({
+    where: {
+      id: taskId,
+      project: {
+        userId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
 
- return updatedTask;
+  if (!task) {
+    throw new Error("Task not found");
+  }
+
+  const updatedTask = await prismaClient.task.update({
+    where: { id: task.id },
+    data: {
+      ...taskDataToUpdate,
+      updatedAt: new Date(now),
+    },
+    include: { status: true },
+  });
+
+  return updatedTask;
 }
 
-export async function deleteTask(taskId: string): Promise<void> {
-  await prismaClient.task.delete({
-    where: { id: taskId }
+export async function deleteTask(
+  taskId: string,
+  userId: string,
+): Promise<{ projectId: string }> {
+  const task = await prismaClient.task.findFirst({
+    where: {
+      id: taskId,
+      project: {
+        userId,
+      },
+    },
+    select: {
+      id: true,
+      projectId: true,
+    },
   });
+
+  if (!task) {
+    throw new Error("Task not found");
+  }
+
+  await prismaClient.task.delete({
+    where: { id: task.id },
+  });
+
+  return { projectId: task.projectId };
 }

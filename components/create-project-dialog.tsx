@@ -16,11 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { createProjectAction } from "@/app/actions";
 import { Plus } from "lucide-react";
 
-interface CreateProjectDialogProps {
-  userId: string;
-}
-
-export function CreateProjectDialog({ userId }: CreateProjectDialogProps) {
+export function CreateProjectDialog() {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -29,7 +25,6 @@ export function CreateProjectDialog({ userId }: CreateProjectDialogProps) {
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    formData.append("userId", userId);
 
     try {
       await createProjectAction(formData);

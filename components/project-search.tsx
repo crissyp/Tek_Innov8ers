@@ -8,11 +8,7 @@ import { ProjectCard } from "./project-card";
 import { Project } from "@/lib/services";
 import { searchProjectsAction } from "@/app/actions";
 
-type ProjectSearchProps = {
-  userId: string;
-};
-
-export function ProjectSearch({ userId }: ProjectSearchProps) {
+export function ProjectSearch() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Project[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -28,7 +24,7 @@ export function ProjectSearch({ userId }: ProjectSearchProps) {
     setError(null);
 
     try {
-      const results = await searchProjectsAction(userId, searchQuery);
+      const results = await searchProjectsAction(searchQuery);
       setSearchResults(results);
     } catch (err) {
       setError("An error occurred during search");
